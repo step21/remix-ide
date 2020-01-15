@@ -55,8 +55,25 @@ module.exports = {
     .testFunction('delegate - transact (not payable)', '0xca58080c8099429caeeffe43b8104df919c2c543dceb9edf9242fa55f045c803',
             `[vm]\nfrom:0xca3...a733c\nto:Ballot.delegate(address) 0x692...77b3a\nvalue:0 wei\ndata:0x5c1...4d2db\nlogs:0\nhash:0xca5...5c803`,
             {types: 'address to', values: '"0x4b0897b0513fdc7c541b6d9d7e929c4e5364d2db"'}, null, null)
+  },
+
+  'Deploy and use Ballot using external web3': function (browser) {
+    browser
+    .click('#selectExEnvOptions #web3-mode')
+    .modalFooterOKClick()
+    .clickLaunchIcon('solidity')
+    .testContracts('Untitled.sol', sources[0]['browser/Untitled.sol'], ['Ballot'])
+    .clickLaunchIcon('udapp')
+    .setValue('input[placeholder="bytes32[] proposalNames"]', '["0x48656c6c6f20576f726c64210000000000000000000000000000000000000000"]')
+    .click('#runTabView button[class^="instanceButton"]')
+    .waitForElementPresent('.instance:nth-of-type(2)')
+    .click('.instance:nth-of-type(2) > div > button')
+    .testFunction('delegate - transact (not payable)', '0x41fab8ea5b1d9fba5e0a6545ca1a2d62fff518578802c033c2b9a031a01c31b3',
+      `[vm]\nfrom:0xca3...a733c\nto:Ballot.delegate(address) 0x692...77b3a\nvalue:0 wei\ndata:0x5c1...4d2db\nlogs:0\nhash:0x41f...c31b3`,
+      {types: 'address to', values: '"0x4b0897b0513fdc7c541b6d9d7e929c4e5364d2db"'}, null, null)
     .end()
   },
+
   tearDown: sauce
 }
 

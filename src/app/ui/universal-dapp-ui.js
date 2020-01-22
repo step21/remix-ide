@@ -126,10 +126,10 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
   })
 
   this.calldataInput = yo`
-    <input class="m-0" title="Input the amount of Ether to send to receive function.">
+    <input class="m-0" title="The amount of Ether to send to receive function.">
   `
   this.amountInput = yo`
-    <input class="m-0" title="Input calldata to send to fallback function.">
+    <input class="m-0" title="The calldata to send to fallback function.">
   `
   this.llIError = yo`
     <label class="text-danger"></label>
@@ -185,7 +185,7 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
     } else {
       if (fallback) {
         // fallback is defined. call the fallback function
-        self.clickButton(args)
+        self.clickButton(args, null, self.calldataInput.value)
       } else {
         // show error
         setLLIError("'fallback' function is not defined")
@@ -213,12 +213,14 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
       // show error:
       setLLIError('Ether amount field is empty')
     } else {
-      if (receive) {
-        self.clickButton(argsR)
+      if (typeof self.amountInput.value !== 'number') {
+        setLLIError('Amount should be number')
+      } else if (receive) {
+        self.clickButton(argsR, null, self.amountInput.value)
         // receive is defined. call the fallback function
       } else if (fallback && fallback.stateMutability === 'payable') {
         // receive is not defined but there is payable fallback function, call it
-        self.clickButton(argsF)
+        self.clickButton(argsF, null, self.amountInput.value)
       } else {
         // show error
         setLLIError("In order to receive Ether transfer the contract should have either 'receive' or payable 'fallback' function")
@@ -238,7 +240,10 @@ UniversalDAppUI.prototype.getCallButton = function (args) {
   // args.contractName [constr only]
   const lookupOnly = args.funABI.stateMutability === 'view' || args.funABI.stateMutability === 'pure' || !!args.funABI.constant
 
-  var outputOverride = yo`<div class=${css.value}></div>` // show return value
+  const functionName = args.contractName +
+    (args.funABI.name ? args.funABI.name : args.funABI.type === 'receive' ? '(receive)' : '(fallback)')
+
+  var outputOverride = yo`<div id="deployAndrunFunctionreturn${functionName}" class=${css.value}></div>` // show return value
 
   const multiParamManager = new MultiParamManager(lookupOnly, args.funABI, (valArray, inputsValue) => {
     this.clickButton(args, valArray, inputsValue)
@@ -253,11 +258,11 @@ UniversalDAppUI.prototype.getCallButton = function (args) {
 UniversalDAppUI.prototype.clickButton = function (args, valArr, inputsValue) {
   let self = this
   // check if it's a special function and add a name in case it is
-  const fuctionName = args.contractName +
+  const functionName = args.contractName +
     (args.funABI.name ? args.funABI.name : args.funABI.type === 'receive' ? '(receive)' : '(fallback)')
 
   const lookupOnly = args.funABI.stateMutability === 'view' || args.funABI.stateMutability === 'pure' || !!args.funABI.constant
-  const logMsg = lookupOnly ? `transact to ${fuctionName}` : `call to ${fuctionName}`
+  const logMsg = lookupOnly ? `transact to ${functionName}` : `call to ${functionName}`
 
   var value = inputsValue
 
@@ -345,8 +350,11 @@ UniversalDAppUI.prototype.clickButton = function (args, valArr, inputsValue) {
   }
 
   const outputCb = (decoded) => {
-    outputOverride.innerHTML = ''
-    outputOverride.appendChild(decoded)
+    let outputOverride = self.getElementById(`deployAndrunFunctionreturn${functionName}`)
+    if (outputOverride) {
+      outputOverride.innerHTML = ''
+      outputOverride.appendChild(decoded)
+    }
   }
 
   const promptCb = (okCb, cancelCb) => {

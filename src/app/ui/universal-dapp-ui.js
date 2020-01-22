@@ -112,30 +112,6 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
   instance.appendChild(title)
   instance.appendChild(contractActionsWrapper)
 
-
-  // Add the fallback function
-  const fallback = self.udapp.getFallbackInterface(contractABI)
-  const receive = self.udapp.getReceiveInterface(contractABI)
-  /*if (fallback) {
-    contractActionsWrapper.appendChild(this.getCallButton({
-      funABI: fallback,
-      address: address,
-      contractAbi: contractABI,
-      contractName: contractName
-    }))
-  }
-
-  // Add the receive function
-
-  if (receive) {
-    contractActionsWrapper.appendChild(this.getCallButton({
-      funABI: receive,
-      address: address,
-      contractAbi: contractABI,
-      contractName: contractName
-    }))
-  }*/
-
   $.each(contractABI, (i, funABI) => {
     if (funABI.type !== 'function') {
       return
@@ -154,6 +130,9 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
   `
   this.amountInput = yo`
     <input class="m-0" title="Input calldata to send to fallback function.">
+  `
+  this.llIError = yo`
+    <label class="text-danger"></label>
   `
   // constract LLInteractions elements
   const lowLevelInteracions = yo`
@@ -181,10 +160,18 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
           <button class="btn btn-sm btn-secondary" title="Send data to contract." onclick=${() => sendCalldata()}>Send</button>
         </div>
       </div>
+      <div>
+        ${this.llIError}
+      </div>
     </div>
   `
 
-  function sendCalldata() {
+  function setLLIError (text) {
+    self.llIError.innerText = text
+  }
+
+  function sendCalldata () {
+    setLLIError('')
     const fallback = self.udapp.getFallbackInterface(contractABI)
     const args = {
       funABI: fallback,
@@ -193,18 +180,21 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
       contractName: contractName
     }
     if (!self.calldataInput.value) {
-      // show error: "please provide the data to send"
+      // show error:
+      setLLIError('Calldata field is empty')
     } else {
       if (fallback) {
         // fallback is defined. call the fallback function
         self.clickButton(args)
       } else {
-        // show error "fallback function is not defined"
+        // show error
+        setLLIError("'fallback' function is not defined")
       }
     }
   }
 
-  function sendEther() {
+  function sendEther () {
+    setLLIError('')
     const fallback = self.udapp.getFallbackInterface(contractABI)
     const receive = self.udapp.getReceiveInterface(contractABI)
     const argsR = {
@@ -220,16 +210,18 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
       contractName: contractName
     }
     if (!self.amountInput.value) {
-      // show error: "please provide the Amount of ether to send"
+      // show error:
+      setLLIError('Ether amount field is empty')
     } else {
       if (receive) {
         self.clickButton(argsR)
         // receive is defined. call the fallback function
-      } else if (fallback && fallback.stateMutability === "payable") {
+      } else if (fallback && fallback.stateMutability === 'payable') {
         // receive is not defined but there is payable fallback function, call it
         self.clickButton(argsF)
       } else {
-        // show error "In order to receive plain Ether transfer the contract should have either 'receive' or payable 'fallback' function". See https://solidity.readthedocs.io/en/v0.6.1/contracts.html#receive-ether-function
+        // show error
+        setLLIError("In order to receive Ether transfer the contract should have either 'receive' or payable 'fallback' function")
       }
     }
   }
@@ -262,7 +254,7 @@ UniversalDAppUI.prototype.clickButton = function (args, valArr, inputsValue) {
   let self = this
   // check if it's a special function and add a name in case it is
   const fuctionName = args.contractName +
-    (args.funABI.name) ? args.funABI.name : args.funABI.type === 'receive' ? '(receive)' : '(fallback)'
+    (args.funABI.name ? args.funABI.name : args.funABI.type === 'receive' ? '(receive)' : '(fallback)')
 
   const lookupOnly = args.funABI.stateMutability === 'view' || args.funABI.stateMutability === 'pure' || !!args.funABI.constant
   const logMsg = lookupOnly ? `transact to ${fuctionName}` : `call to ${fuctionName}`

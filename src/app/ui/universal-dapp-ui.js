@@ -129,7 +129,7 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
     <input class="w-100 m-0" title="The Calldata to send to fallback function of the contract.">
   `
   const llIError = yo`
-    <label class="text-danger"></label>
+    <label id="deployAndRunLLTxError" class="text-danger"></label>
   `
   // constract LLInteractions elements
   const lowLevelInteracions = yo`
@@ -149,7 +149,7 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
         <div class="d-flex justify-content-end m-2 align-items-center">
           <label class="mr-2 m-0">Calldata</label>
           ${calldataInput}
-          <button class="btn btn-sm btn-secondary" title="Send data to contract." onclick=${() => sendData()}>Transact</button>
+          <button id="deployAndRunLLTxSendTransaction" class="btn btn-sm btn-secondary" title="Send data to contract." onclick=${() => sendData()}>Transact</button>
         </div>
       </div>
       <div>
@@ -162,7 +162,7 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
     let error = false
     function setLLIError (text) {
       llIError.innerText = text
-      if ('' !== text) error = true
+      if (text !== '') error = true
     }
 
     setLLIError('')
@@ -176,7 +176,7 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
     }
     let calldata = calldataInput.value
     const amount = document.querySelector('#value').value
-    if ('0' !== amount) {
+    if (amount !== '0') {
       // check for numeric and receive/fallback
       if (!isNumeric(amount)) {
         setLLIError('Value to send should be a number')
@@ -185,19 +185,19 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
       }
     }
     if (calldata) {
-      // remove the prepix '0x' if any
-      if (calldata.length > 3 && '0x' == calldata.substr(0, 2)) {
-        if (!isHexadecimal(calldata.substr(2, calldata.length)))
+      if (calldata.length > 3 && calldata.substr(0, 2) === '0x') {
+        if (!isHexadecimal(calldata.substr(2, calldata.length))) {
           setLLIError('the calldata should be a valid hexadecimal value.')
+        }
       }
       if (!fallback) {
         setLLIError("'fallback' function is not defined")
       }
     }
-    if ((calldata || '0' !== amount) && !error) self.runTransaction(false, args, null, calldata, null)
+    if ((calldata || amount !== '0') && !error) self.runTransaction(false, args, null, calldata, null)
   }
 
-  function isHexadecimal(value) {
+  function isHexadecimal (value) {
     return /^[0-9a-fA-F]+$/.test(value)
   }
 
@@ -209,7 +209,8 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
   return instance
 }
 
-const confirmationCb = (network, tx, gasEstimation, continueTxExecution, cancelCb) => {
+UniversalDAppUI.prototype.confirmationCb = function (network, tx, gasEstimation, continueTxExecution, cancelCb) {
+  let self = this
   if (network.name !== 'Main') {
     return continueTxExecution(null)
   }
@@ -304,9 +305,12 @@ UniversalDAppUI.prototype.getCallButton = function (args) {
   let self = this
   var outputOverride = yo`<div class=${css.value}></div>` // show return value
   const lookupOnly = args.funABI.stateMutability === 'view' || args.funABI.stateMutability === 'pure' || args.funABI.constant
-  const multiParamManager = new MultiParamManager(lookupOnly, args.funABI, (valArray, inputsValues) => {
-   self.runTransaction(lookupOnly, args, valArray, inputsValues, outputOverride)
-  }, self.udapp.getInputs(args.funABI))
+  const multiParamManager = new MultiParamManager(
+    lookupOnly,
+    args.funABI,
+    (valArray, inputsValues) => self.runTransaction(lookupOnly, args, valArray, inputsValues, outputOverride),
+    self.udapp.getInputs(args.funABI)
+  )
 
   const contractActionsContainer = yo`<div class="${css.contractActionsContainer}" >${multiParamManager.render()}</div>`
   contractActionsContainer.appendChild(outputOverride)
@@ -340,7 +344,7 @@ UniversalDAppUI.prototype.runTransaction = function (lookupOnly, args, valArr, i
         self.logCallback(`${logMsg}`)
       }
       if (args.funABI.type === 'fallback') data.dataHex = value
-      self.udapp.callFunction(args.address, data, args.funABI, confirmationCb, continueCb, promptCb, (error, txResult) => {
+      self.udapp.callFunction(args.address, data, args.funABI, this.confirmationCb, continueCb, promptCb, (error, txResult) => {
         if (!error) {
           var isVM = self.executionContext.isVM()
           if (isVM) {
@@ -365,7 +369,7 @@ UniversalDAppUI.prototype.runTransaction = function (lookupOnly, args, valArr, i
     self.logCallback(msg)
   }, (data, runTxCallback) => {
     // called for libraries deployment
-    self.udapp.runTx(data, confirmationCb, runTxCallback)
+    self.udapp.runTx(data, this.confirmationCb, runTxCallback)
   })
 }
 

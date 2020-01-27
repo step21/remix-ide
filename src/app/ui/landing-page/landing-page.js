@@ -129,6 +129,11 @@ export class LandingPage extends ViewPlugin {
       this.appManager.ensureActivated('udapp')
       this.verticalIcons.select('vyper')
     }
+    const startLexon = () => {
+      this.appManager.ensureActivated('solidity')
+      this.appManager.ensureActivated('udapp')
+      this.verticalIcons.select('lexon')
+    }
     const startWorkshop = () => {
       this.appManager.ensureActivated('box')
       this.appManager.ensureActivated('solidity')
@@ -196,6 +201,7 @@ export class LandingPage extends ViewPlugin {
             <div class="${css.enviroments} pt-2">
               <button class="btn btn-lg btn-secondary mr-3" onclick=${() => startSolidity()}>Solidity</button>
               <button class="btn btn-lg btn-secondary mr-3" onclick=${() => startVyper()}>Vyper</button>
+              <button class="btn btn-lg btn-secondary mr-3" onclick=${() => startLexon()}>Lexon</button>
             </div>
           </div>
           <div class="file">

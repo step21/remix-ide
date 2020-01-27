@@ -126,7 +126,7 @@ UniversalDAppUI.prototype.renderInstanceFromABI = function (contractABI, address
   })
 
   const calldataInput = yo`
-    <input class="w-100 m-0" title="The Calldata to send to fallback function of the contract.">
+    <input id="deployAndRunLLTxCalldata" class="w-100 m-0" title="The Calldata to send to fallback function of the contract.">
   `
   const llIError = yo`
     <label id="deployAndRunLLTxError" class="text-danger"></label>

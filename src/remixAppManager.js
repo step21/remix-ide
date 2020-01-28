@@ -12,7 +12,7 @@ const requiredModules = [ // services + layout views + system views
 const settings = {
   permissionHandler: new PermissionHandler(),
   autoActivate: false,
-  natives: ['vyper', 'workshops', 'ethdoc', 'etherscan'] // Force iframe plugin to be seen as native
+  natives: ['vyper', 'lexon', 'workshops', 'ethdoc', 'etherscan'] // Force iframe plugin to be seen as native
 }
 
 export class RemixAppManager extends PluginEngine {
@@ -230,7 +230,6 @@ export class RemixAppManager extends PluginEngine {
       new IframePlugin(ethpm),
       new IframePlugin(zokrates),
       new IframePlugin(quorum),
-      new IframePlugin(lexonCompiler),
       ...plugins.map(plugin => new IframePlugin(plugin))
     ]
   }

@@ -22,6 +22,7 @@ class ContractDropdownUI {
     this.dropdownLogic.event.register('newlyCompiled', (success, data, source, compiler, compilerFullName, file) => {
       if (!document.querySelector(`.${css.contractNames.classNames[0]}`)) return
       var contractNames = document.querySelector(`.${css.contractNames.classNames[0]}`)
+      console.log('contract names', contractNames)
       contractNames.innerHTML = ''
       if (success) {
         this.selectContractNames.removeAttribute('disabled')

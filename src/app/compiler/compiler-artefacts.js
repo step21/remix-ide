@@ -23,17 +23,14 @@ module.exports = class CompilerArtefacts extends Plugin {
   onActivation () {
     this.on('solidity', 'compilationFinished', (file, source, languageVersion, data) => {
       this.compilersArtefacts['__last'] = new CompilerAbstract(languageVersion, data, source)
-      console.log('solidity compilation received ', file, source, languageVersion, data)
     })
 
     this.on('vyper', 'compilationFinished', (file, source, languageVersion, data) => {
       this.compilersArtefacts['__last'] = new CompilerAbstract(languageVersion, data, source)
-      console.log('vyper compilation received ', file, source, languageVersion, data)
     })
 
     this.on('lexon', 'compilationFinished', (file, source, languageVersion, data) => {
       this.compilersArtefacts['__last'] = new CompilerAbstract(languageVersion, data, source)
-      console.log('lexon compilation received ', file, source, languageVersion, data)
     })
   }
 }

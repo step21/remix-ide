@@ -116,7 +116,7 @@ var css = csjs`
   *
   */
 class TxLogger {
-  constructor (eventsDecoder, txListener, terminal, blockchain) {
+  constructor (terminal, blockchain) {
     this.event = new EventManager()
     this.seen = {}
     function filterTx (value, query) {
@@ -125,8 +125,8 @@ class TxLogger {
       }
       return false
     }
-    this.eventsDecoder = eventsDecoder
-    this.txListener = txListener
+    this.eventsDecoder = globlalRegistry.get('eventsDecoder').api
+    this.txListener = globlalRegistry.get('txlistener').api
     this.terminal = terminal
     // dependencies
     this._deps = {
@@ -215,7 +215,7 @@ function renderKnownTransaction (self, data, blockchain) {
         ${checkTxStatus(data.receipt, txType)}
         ${context(self, {from, to, data}, blockchain)}
         <div class=${css.buttons}>
-          <button class="${css.debug} btn btn-primary btn-sm" onclick=${(e) => debug(e, data, self)}>Debug</div>
+          <button data-shared="txLoggerDebugButton" class="${css.debug} btn btn-primary btn-sm" onclick=${(e) => debug(e, data, self)}>Debug</div>
         </div>
         <i class="${css.arrow} fas fa-angle-down"></i>
       </div>

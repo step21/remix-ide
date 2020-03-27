@@ -45,7 +45,7 @@ class Terminal extends Plugin {
     self._api = api
     self._opts = opts
     self.data = {
-      lineLength: opts.lineLength || 80,
+      lineLength: opts.lineLength || 80, // ????
       session: [],
       activeFilters: { commands: {}, input: '' },
       filterFns: {}
@@ -81,7 +81,7 @@ class Terminal extends Plugin {
       scopedCommands.log(`> ${script}`)
       self._shell(script, scopedCommands, function (error, output) {
         if (error) scopedCommands.error(error)
-        else scopedCommands.log(output)
+        else if (output) scopedCommands.log(output)
       })
     }, { activate: true })
     function basicFilter (value, query) { try { return value.indexOf(query) !== -1 } catch (e) { return false } }
@@ -95,13 +95,28 @@ class Terminal extends Plugin {
     self._jsSandboxContext = {}
     self._jsSandboxRegistered = {}
 
-    // TODO move this to the application start. Put it in mainView.
-    // We should have a HostPlugin which add the terminal.
-    opts.appManager.register(this)
-    opts.appManager.activate('terminal')
-
-    if (opts.shell) self._shell = opts.shell
+    if (opts.shell) self._shell = opts.shell // ???
     register(self)
+  }
+  onActivation () {
+    this.on('scriptRunner', 'log', (msg) => {
+      this.commands['log'].apply(this.commands, msg.data)
+    })
+    this.on('scriptRunner', 'info', (msg) => {
+      this.commands['info'].apply(this.commands, msg.data)
+    })
+    this.on('scriptRunner', 'warn', (msg) => {
+      this.commands['warn'].apply(this.commands, msg.data)
+    })
+    this.on('scriptRunner', 'error', (msg) => {
+      this.commands['error'].apply(this.commands, msg.data)
+    })
+  }
+  onDeactivation () {
+    this.off('scriptRunner', 'log')
+    this.off('scriptRunner', 'info')
+    this.off('scriptRunner', 'warn')
+    this.off('scriptRunner', 'error')
   }
   logHtml (html) {
     var command = this.commands['html']
@@ -113,21 +128,23 @@ class Terminal extends Plugin {
   render () {
     var self = this
     if (self._view.el) return self._view.el
-    self._view.journal = yo`<div id="journal" class=${css.journal}></div>`
+    self._view.journal = yo`<div id="journal" class=${css.journal} data-id="terminalJournal"></div>`
     self._view.input = yo`
       <span class=${css.input} onload=${() => { this.focus() }} onpaste=${paste} onkeydown=${change}></span>
     `
     self._view.input.setAttribute('spellcheck', 'false')
     self._view.input.setAttribute('contenteditable', 'true')
     self._view.input.setAttribute('id', 'terminalCliInput')
+    self._view.input.setAttribute('data-id', 'terminalCliInput')
 
     self._view.input.innerText = '\n'
     self._view.cli = yo`
-      <div id="terminalCli" data-id="terminalCli" class="${css.cli}">
+      <div id="terminalCli" data-id="terminalCli" class="${css.cli}" onclick=${focusinput}>
         <span class=${css.prompt}>${'>'}</span>
         ${self._view.input}
       </div>
     `
+
     self._view.icon = yo`
       <i onmouseenter=${hover} onmouseleave=${hover} onmousedown=${minimize}
       class="btn btn-secondary btn-sm align-items-center ${css.toggleTerminal} fas fa-angle-double-down" data-id="terminalToggleIcon"></i>`
@@ -138,10 +155,10 @@ class Terminal extends Plugin {
     self._view.inputSearch = yo`<input
       spellcheck="false"
       type="text"
-      class="${css.filter} form-control"
+      class="border ${css.filter} form-control"
       id="searchInput"
       onkeydown=${filter}
-      placeholder="Search with transaction hash or address">
+      placeholder="Filter with transaction hash or address">
     </input>`
     self._view.bar = yo`
       <div class="${css.bar}">
@@ -177,7 +194,7 @@ class Terminal extends Plugin {
       </div>
     `
     self._view.term = yo`
-      <div class="${css.terminal_container}" data-id="terminalContainer" onscroll=${throttle(reattach, 10)} onclick=${focusinput}>
+      <div class="${css.terminal_container}" data-id="terminalContainer" onscroll=${throttle(reattach, 10)}>
         ${self._components.autoCompletePopup.render()}
         <div class="bg-secondary" data-id="terminalContainerDisplay" style="
           position: absolute;
@@ -437,10 +454,10 @@ class Terminal extends Plugin {
     self._shell('remix.help()', self.commands, () => {})
     self.commands.html(intro)
 
-    self._components.txLogger = new TxLogger(self._opts.eventsDecoder, self._opts.txListener, this, self.blockchain)
-    self._components.txLogger.event.register('debuggingRequested', (hash) => {
+    self._components.txLogger = new TxLogger(this, self.blockchain)
+    self._components.txLogger.event.register('debuggingRequested', async (hash) => {
       // TODO should probably be in the run module
-      if (!self._opts.appManager.isActive('debugger')) self._opts.appManager.activateOne('debugger')
+      if (!await self._opts.appManager.isActive('debugger')) await self._opts.appManager.activatePlugin('debugger')
       this.call('debugger', 'debug', hash)
       this.call('menuicons', 'select', 'debugger')
     })
@@ -663,17 +680,27 @@ class Terminal extends Plugin {
     }
     return self.commands[name]
   }
-  _shell (script, scopedCommands, done) { // default shell
+  async _shell (script, scopedCommands, done) { // default shell
     if (script.indexOf('remix:') === 0) {
       return done(null, 'This type of command has been deprecated and is not functionning anymore. Please run remix.help() to list available commands.')
     }
     var self = this
-    var context = domTerminalFeatures(self, scopedCommands, self.blockchain)
+    if (script.indexOf('remix.') === 0) {
+      // we keep the old feature. This will basically only be called when the command is querying the "remix" object.
+      // for all the other case, we use the Code Executor plugin
+      var context = domTerminalFeatures(self, scopedCommands, self.blockchain)
+      try {
+        var cmds = vm.createContext(Object.assign(self._jsSandboxContext, context, self._jsSandboxRegistered))
+        var result = vm.runInContext(script, cmds)
+        self._jsSandboxContext = Object.assign(cmds, context)
+        return done(null, result)
+      } catch (error) {
+        return done(error.message)
+      }
+    }
     try {
-      var cmds = vm.createContext(Object.assign(self._jsSandboxContext, context, self._jsSandboxRegistered))
-      var result = vm.runInContext(script, cmds)
-      self._jsSandboxContext = Object.assign(cmds, context)
-      done(null, result)
+      await this.call('scriptRunner', 'execute', script)
+      done()
     } catch (error) {
       done(error.message)
     }

@@ -1,6 +1,7 @@
 var yo = require('yo-yo')
 var $ = require('jquery')
 const EventEmitter = require('events')
+const globalRegistry = require('../../global/registry')
 
 require('remix-tabs')
 
@@ -13,6 +14,11 @@ export class TabProxy {
     this.data = {}
     this._view = {}
     this._handlers = {}
+
+    globalRegistry.get('themeModule').api.events.on('themeChanged', (theme) => {
+    // update invert for all icons
+      this.updateImgStyles()
+    })
 
     fileManager.events.on('fileRemoved', (name) => {
       this.removeTab(name)
@@ -49,25 +55,24 @@ export class TabProxy {
       })
     })
 
-    appManager.event.on('activate', (name) => {
-      const { profile } = appManager.getOne(name)
-      if (profile.location === 'mainPanel') {
+    appManager.event.on('activate', ({ name, location, displayName, icon }) => {
+      if (location === 'mainPanel') {
         this.addTab(
           name,
-          profile.displayName,
+          displayName,
           () => this.event.emit('switchApp', name),
           () => {
             this.event.emit('closeApp', name)
-            this.appManager.deactivateOne(name)
+            this.appManager.deactivatePlugin(name)
           },
-          profile.icon
+          icon
         )
         this.switchTab(name)
       }
     })
 
-    appManager.event.on('deactivate', (name) => {
-      this.removeTab(name)
+    appManager.event.on('deactivate', (profile) => {
+      this.removeTab(profile.name)
     })
 
     appManager.event.on('ensureActivated', (name) => {
@@ -77,6 +82,14 @@ export class TabProxy {
         this._view.filetabs.activateTab(name)
       }
     })
+  }
+  updateImgStyles () {
+    const images = this._view.filetabs.getElementsByClassName('image')
+    if (images.length !== 0) {
+      for (let element of images) {
+        globalRegistry.get('themeModule').api.fixInvert(element)
+      };
+    }
   }
 
   switchTab (tabName) {
@@ -130,6 +143,7 @@ export class TabProxy {
       icon,
       tooltip: name
     })
+    this.updateImgStyles()
     this._handlers[name] = { switchTo, close }
   }
 
@@ -166,8 +180,8 @@ export class TabProxy {
 
     const zoomBtns = yo`
       <div class="d-flex flex-row justify-content-center align-items-center">
-        <span class="btn btn-sm px-1 fas fa-search-minus text-dark" onclick=${() => this.onZoomOut()}></span>
-        <span class="btn btn-sm px-1 fas fa-search-plus text-dark" onclick=${() => this.onZoomIn()}></span>
+        <span data-id="tabProxyZoomOut" class="btn btn-sm px-1 fas fa-search-minus text-dark" onclick=${() => this.onZoomOut()}></span>
+        <span data-id="tabProxyZoomIn" class="btn btn-sm px-1 fas fa-search-plus text-dark" onclick=${() => this.onZoomIn()}></span>
       </div>
     `
 

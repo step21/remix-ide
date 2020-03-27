@@ -100,7 +100,7 @@ class MultiParamManager {
     if (this.funABI.inputs) {
       return yo`<div>
         ${this.funABI.inputs.map(function (inp) {
-          return yo`<div class="${css.multiArg}"><label for="${inp.name}"> ${inp.name}: </label><input placeholder="${inp.type}" title="${inp.name}"></div>`
+          return yo`<div class="${css.multiArg}"><label for="${inp.name}"> ${inp.name}: </label><input class="form-control" placeholder="${inp.type}" title="${inp.name}"></div>`
         })}
       </div>`
     }
@@ -116,17 +116,17 @@ class MultiParamManager {
       title = this.funABI.type === 'receive' ? '(receive)' : '(fallback)'
     }
 
-    this.basicInputField = yo`<input></input>`
+    this.basicInputField = yo`<input class="form-control"></input>`
     this.basicInputField.setAttribute('placeholder', this.inputs)
     this.basicInputField.setAttribute('title', this.inputs)
-    this.basicInputField.setAttribute('style', 'flex: 4')
+    this.basicInputField.setAttribute('data-id', this.inputs)
 
     var onClick = () => {
       this.clickCallBack(this.funABI.inputs, this.basicInputField.value)
     }
     let funcButton = yo`<button onclick=${() => onClick()} class="${css.instanceButton} btn btn-sm">${title}</button>`
     this.contractActionsContainerSingle = yo`
-    <div class="${css.contractActionsContainerSingle}" >
+    <div class="${css.contractActionsContainerSingle} pt-2">
       ${funcButton}
       ${this.basicInputField}
       <i class="fas fa-angle-down ${css.methCaret}" onclick=${() => this.switchMethodViewOn()} title=${title} ></i>
@@ -148,12 +148,11 @@ class MultiParamManager {
     this.contractActionsContainerMulti = yo`<div class="${css.contractActionsContainerMulti}" >
       <div class="${css.contractActionsContainerMultiInner} text-dark" >
         <div onclick=${() => { this.switchMethodViewOff() }} class="${css.multiHeader}">
-          <div class="${css.multiTitle}">${title}</div>
+          <div class="${css.multiTitle} run-instance-multi-title">${title}</div>
           <i class='fas fa-angle-up ${css.methCaret}'></i>
         </div>
         ${this.multiFields}
         <div class="${css.group} ${css.multiArg}" >
-          ${expandedButton}
           ${copyToClipboard(
             () => {
               var multiString = this.getMultiValsString()
@@ -170,6 +169,7 @@ class MultiParamManager {
                 return encodeObj.data
               }
             }, 'Encode values of input fields & copy to clipboard', 'fa-clipboard')}
+            ${expandedButton}
         </div>
       </div>
     </div>`
@@ -186,6 +186,7 @@ class MultiParamManager {
       expandedButton.classList.add('btn-info')
       funcButton.setAttribute('title', (title + ' - call'))
       funcButton.classList.add('btn-info')
+      funcButton.setAttribute('data-id', (title + ' - call'))
     } else if (this.funABI.stateMutability === 'payable' || this.funABI.payable) {
       // transact. stateMutability = payable
       expandedButton.setAttribute('title', (title + ' - transact (payable)'))
@@ -193,6 +194,7 @@ class MultiParamManager {
       expandedButton.classList.add('btn-danger')
       funcButton.setAttribute('title', (title + ' - transact (payable)'))
       funcButton.classList.add('btn-danger')
+      funcButton.setAttribute('data-id', (title + ' - transact (payable)'))
     } else {
       // transact. stateMutability = nonpayable
       expandedButton.setAttribute('title', (title + ' - transact (not payable)'))
@@ -200,6 +202,7 @@ class MultiParamManager {
       expandedButton.classList.add('btn-warning')
       funcButton.classList.add('btn-warning')
       funcButton.setAttribute('title', (title + ' - transact (not payable)'))
+      funcButton.setAttribute('data-id', (title + ' - transact (not payable)'))
     }
 
     if (this.funABI.inputs && this.funABI.inputs.length > 0) {
@@ -208,6 +211,7 @@ class MultiParamManager {
       contractProperty.classList.add(css.hasArgs)
       this.basicInputField.setAttribute('title', `'(${this.funABI.type}')`) // probably should pass name instead
       this.contractActionsContainerSingle.querySelector('i').style.visibility = 'hidden'
+      this.basicInputField.setAttribute('data-id', `'(${this.funABI.type}')`)
     } else {
       this.contractActionsContainerSingle.querySelector('i').style.visibility = 'hidden'
       this.basicInputField.style.visibility = 'hidden'

@@ -9,10 +9,9 @@ const defaultProfile = {
 }
 
 module.exports = class LocalPlugin {
-
   /**
    * Open a modal to create a local plugin
-   * @param {PluginApi[]} plugins The list of the plugins in the store
+   * @param {Profile[]} plugins The list of the plugins in the store
    * @returns {Promise<{api: any, profile: any}>} A promise with the new plugin profile
    */
   open (plugins) {
@@ -26,7 +25,7 @@ module.exports = class LocalPlugin {
           reject(err)
         }
       }
-      modalDialog('Local Plugin', this.form(plugins),
+      modalDialog('Local Plugin', this.form(),
         { fn: () => onValidation() },
         { fn: () => resolve() }
       )
@@ -76,11 +75,11 @@ module.exports = class LocalPlugin {
     const radioSelection = (key, label, message) => {
       return this.profile[key] === label
         ? yo`<div class="radio">
-          <input class="form-check-input" type="radio" name="${key}" onclick="${e => this.updateProfile(key, e)}" value="${label}" id="${label}" checked="checked" />
+          <input class="form-check-input" type="radio" name="${key}" onclick="${e => this.updateProfile(key, e)}" value="${label}" id="${label}" data-id="localPluginRadioButton${label}" checked="checked" />
           <label class="form-check-label" for="${label}">${message}</label>
         </div>`
         : yo`<div class="radio">
-          <input class="form-check-input" type="radio" name="${key}" onclick="${e => this.updateProfile(key, e)}" value="${label}" id="${label}" />
+          <input class="form-check-input" type="radio" name="${key}" onclick="${e => this.updateProfile(key, e)}" value="${label}" id="${label}" data-id="localPluginRadioButton${label}" />
           <label class="form-check-label" for="${label}">${message}</label>
         </div>`
     }
@@ -89,15 +88,15 @@ module.exports = class LocalPlugin {
     <form id="local-plugin-form">
       <div class="form-group">
         <label for="plugin-name">Plugin Name <small>(required)</small></label>
-        <input class="form-control" onchange="${e => this.updateName(e)}" value="${name}" id="plugin-name" placeholder="Should be camelCase">
+        <input class="form-control" onchange="${e => this.updateName(e)}" value="${name}" id="plugin-name" data-id="localPluginName" placeholder="Should be camelCase">
       </div>
       <div class="form-group">
         <label for="plugin-displayname">Display Name</label>
-        <input class="form-control" onchange="${e => this.updateDisplayName(e)}" value="${displayName}" id="plugin-displayname" placeholder="Name in the header">
+        <input class="form-control" onchange="${e => this.updateDisplayName(e)}" value="${displayName}" id="plugin-displayname" data-id="localPluginDisplayName" placeholder="Name in the header">
       </div>
       <div class="form-group">
         <label for="plugin-url">Url <small>(required)</small></label>
-        <input class="form-control" onchange="${e => this.updateUrl(e)}" value="${url}" id="plugin-url" placeholder="ex: https://localhost:8000">
+        <input class="form-control" onchange="${e => this.updateUrl(e)}" value="${url}" id="plugin-url" data-id="localPluginUrl" placeholder="ex: https://localhost:8000">
       </div>
       <h6>Type of connection <small>(required)</small></h6>
       <div class="form-check form-group">

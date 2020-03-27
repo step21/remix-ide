@@ -7,7 +7,11 @@ module.exports = function (browser, callback, url, preloadPlugins = true) {
       browser.resizeWindow(2560, 1440, () => {
         if (preloadPlugins) {
           initModules(browser, () => {
-            browser.clickLaunchIcon('solidity').click('#autoCompile')
+            browser.clickLaunchIcon('solidity')
+            .pause(2000)
+            .execute(() => {
+              document.getElementById('autoCompile').click()
+            })
             .perform(function () {
               callback()
             })
@@ -18,7 +22,7 @@ module.exports = function (browser, callback, url, preloadPlugins = true) {
 }
 
 function initModules (browser, callback) {
-  browser.pause(3000)
+  browser.pause(5000)
     .click('#icon-panel div[plugin="pluginManager"]')
     .scrollAndClick('#pluginManager article[id="remixPluginManagerListItem_solidity"] button')
     .pause(5000)
@@ -29,5 +33,6 @@ function initModules (browser, callback) {
     .clickLaunchIcon('settings')
     .setValue('#gistaccesstoken', process.env.gist_token)
     .click('#savegisttoken')
+    .click('#settingsView #Flatly') // e2e tests were initially developed with Flatly. Some tests are failing with the default one (Dark), because the dark theme put uppercase everywhere.
     .perform(() => { callback() })
 }

@@ -41,7 +41,7 @@ class AutoCompletePopup {
         <div>
           ${self.data._options.map((item, index) => {
             return yo`
-              <div class="${css.autoCompleteItem} ${css.listHandlerHide} item ${self._selectedElement === index ? 'border border-primary' : ''}">
+              <div data-id="autoCompletePopUpAutoCompleteItem" class="${css.autoCompleteItem} ${css.listHandlerHide} item ${self._selectedElement === index ? 'border border-primary' : ''}">
                   <div value=${index} onclick=${(event) => { self.handleSelect(event.srcElement.innerText) }}>
                     ${getKeyOf(item)} 
                   </div>
@@ -189,13 +189,12 @@ class AutoCompletePopup {
 
   extendAutocompletion () {
     // TODO: this is not using the appManager interface. Terminal should be put as module
-    this.opts.appManager.event.on('activate', (id) => {
-      const profile = this.opts.appManager.getOne(id).profile
+    this.opts.appManager.event.on('activate', async (profile) => {
       if (!profile.methods) return
       profile.methods.forEach((method) => {
-        const key = `remix.call({name: '${id}', key:'${method}', payload: []}).then((result) => { console.log(result) }).catch((error) => { console.log(error) })`
+        const key = `remix.call({name: '${profile.name}', key:'${method}', payload: []}).then((result) => { console.log(result) }).catch((error) => { console.log(error) })`
         const keyValue = {}
-        keyValue[key] = `call ${id} - ${method}`
+        keyValue[key] = `call ${profile.name} - ${method}`
         if (this.extraCommands.includes(keyValue)) return
         this.extraCommands.push(keyValue)
       })

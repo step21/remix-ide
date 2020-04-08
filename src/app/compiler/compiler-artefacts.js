@@ -32,5 +32,9 @@ module.exports = class CompilerArtefacts extends Plugin {
     this.on('lexon', 'compilationFinished', (file, source, languageVersion, data) => {
       this.compilersArtefacts['__last'] = new CompilerAbstract(languageVersion, data, source)
     })
+
+    this.on('lexonDev', 'compilationFinished', (file, source, languageVersion, data) => {
+      this.compilersArtefacts['__last'] = new CompilerAbstract(languageVersion, data, source)
+    })
   }
 }
